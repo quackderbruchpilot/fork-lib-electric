@@ -794,6 +794,7 @@ libelec_new(const char *filename)
 
 	sys->comp_infos = infos_parse(filename, &sys->num_infos);
 	if (sys->comp_infos == NULL) {
+		free(sys->conf_filename);
 		ZERO_FREE(sys);
 		return (NULL);
 	}
@@ -1992,6 +1993,16 @@ infos_parse(const char *filename, size_t *num_infos)
 		} else if (strcmp(cmd, "FUSE") == 0 && n_comps == 1 &&
 		    info != NULL && info->type == ELEC_CB) {
 			info->cb.fuse = true;
+		} else if (strcmp(cmd, "GUI_LABEL") == 0 && n_comps >= 2 &&
+		    info != NULL && info->type != ELEC_LABEL_BOX) {
+			size_t sz = 0;
+
+			CHECK_COMP(info->gui.label == NULL,
+			    "duplicate GUI_LABEL for component");
+			for (size_t i = 1; i < n_comps; i++) {
+				append_format(&info->gui.label, &sz, "%s%s",
+				    comps[i], i + 1 < n_comps ? " " : "");
+			}
 		} else if (strcmp(cmd, "GUI_POS") == 0 && (n_comps == 3 ||
 		    n_comps == 4) && info != NULL) {
 			info->gui.pos = VECT2(atof(comps[1]), atof(comps[2]));
@@ -2090,6 +2101,7 @@ infos_parse(const char *filename, size_t *num_infos)
 errout:
 	fclose(fp);
 	free(line);
+	infos_free(infos, num_comps);
 	*num_infos = 0;
 
 	return (NULL);
@@ -2103,6 +2115,7 @@ infos_free(elec_comp_info_t *infos, size_t num_infos)
 		elec_comp_info_t *info = &infos[i];
 
 		free(info->name);
+		free(info->gui.label);
 		if (info->type == ELEC_GEN)
 			free(info->gen.eff_curve);
 		else if (info->type == ELEC_TRU || info->type == ELEC_INV)

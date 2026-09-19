@@ -204,3 +204,11 @@ target_link_libraries(nettest
     ${MATH_LIB}
     ${PLATFORM_LIBS}
     )
+
+include(CTest)
+if(BUILD_TESTING)
+	add_executable(gui_label_test gui_label_test.c "${LIBELEC}/libelec.c")
+	target_link_libraries(gui_label_test
+	    ${LIBACFUTILS_LIB} ${MATH_LIB} ${PLATFORM_LIBS})
+	add_test(NAME gui_label COMMAND gui_label_test)
+endif()
