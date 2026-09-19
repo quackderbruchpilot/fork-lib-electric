@@ -47,6 +47,23 @@ make_comp_name(const char *in_name, char out_name[MAX_NAME_LEN])
 		out_name[n - 2] = '/';
 }
 
+/* Caller owns the returned string. Labels never alter component identity. */
+static char *
+make_comp_label(const elec_comp_info_t *info)
+{
+	char name[MAX_NAME_LEN];
+
+	ASSERT(info != NULL);
+	ASSERT(info->name != NULL);
+	if (info->gui.label != NULL) {
+		return (sprintf_alloc("%s (%s)", info->name,
+		    info->gui.label));
+	}
+	/* Preserve the existing presentation for files without GUI_LABEL. */
+	make_comp_name(info->name, name);
+	return (safe_strdup(name));
+}
+
 static void
 get_srcs(const elec_comp_t *comp, elec_comp_t *srcs[ELEC_MAX_SRCS])
 {
@@ -312,7 +329,7 @@ draw_gen(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 {
 	vect2_t pos;
 	vect3_t color;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(info != NULL);
@@ -342,9 +359,10 @@ draw_gen(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 	}
 	cairo_stroke(cr);
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y + 2), TEXT_ALIGN_CENTER,
 	    "%s", name);
+	free(name);
 }
 
 static void
@@ -382,27 +400,27 @@ draw_bus(cairo_t *cr, double pos_scale, const elec_comp_t *bus)
 	}
 
 	if (info->gui.sz != 0 && !info->gui.virt) {
-		char name[MAX_NAME_LEN];
-		make_comp_name(info->name, name);
+		char *name;
+		name = make_comp_label(info);
 		show_text_aligned(cr, PX(pos.x), PX(pos.y - info->gui.sz - 1),
 		    TEXT_ALIGN_CENTER, "%s", name);
+		free(name);
 	}
 }
 
 static void
 draw_cb_icon(cairo_t *cr, double pos_scale, double font_sz, vect2_t pos,
-    bool fuse, bool set, bool triphase, const char *comp_name,
+    bool fuse, bool set, bool triphase,
     vect3_t bg_color, const elec_comp_t *comp)
 {
 	double text_y_off;
 	cairo_path_t *path;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
-	ASSERT(comp_name != NULL);
 	ASSERT(comp != NULL);
 
-	make_comp_name(comp_name, name);
+	name = make_comp_label(comp->info);
 	cairo_new_path(cr);
 
 	if (!fuse) {
@@ -459,6 +477,7 @@ draw_cb_icon(cairo_t *cr, double pos_scale, double font_sz, vect2_t pos,
 	text_y_off = (fuse ? 1.5 : 0.8);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y + text_y_off),
 	    TEXT_ALIGN_CENTER, "%s", name);
+	free(name);
 }
 
 static void
@@ -469,7 +488,7 @@ draw_cb(cairo_t *cr, double pos_scale, const elec_comp_t *cb, double font_sz,
 	ASSERT(cb != NULL);
 	draw_cb_icon(cr, pos_scale, font_sz, cb->info->gui.pos,
 	    cb->info->cb.fuse, !cb->ro.failed && cb->scb.cur_set,
-	    cb->info->cb.triphase, cb->info->name, bg_color, cb);
+	    cb->info->cb.triphase, bg_color, cb);
 }
 
 static void
@@ -478,7 +497,7 @@ draw_shunt(cairo_t *cr, double pos_scale, const elec_comp_t *shunt)
 	vect2_t pos;
 	cairo_path_t *path;
 	const elec_comp_info_t *info;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(shunt != NULL);
@@ -501,9 +520,10 @@ draw_shunt(cairo_t *cr, double pos_scale, const elec_comp_t *shunt)
 	cairo_set_line_width(cr, 2);
 	draw_src_path(cr, path, shunt);
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y + 1.7),
 	    TEXT_ALIGN_CENTER, "%s", name);
+	free(name);
 }
 
 static void
@@ -511,7 +531,7 @@ draw_tru_inv(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 {
 	vect2_t pos;
 	vect3_t color;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(info != NULL);
@@ -555,9 +575,10 @@ draw_tru_inv(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 
 	cairo_stroke(cr);
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x - 2), PX(pos.y),
 	    TEXT_ALIGN_RIGHT, "%s", name);
+	free(name);
 }
 
 static void
@@ -565,7 +586,7 @@ draw_xfrmr(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 {
 	vect2_t pos;
 	vect3_t color;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(info != NULL);
@@ -605,9 +626,10 @@ draw_xfrmr(cairo_t *cr, double pos_scale, const elec_comp_info_t *info)
 
 	cairo_stroke(cr);
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x - 2), PX(pos.y),
 	    TEXT_ALIGN_RIGHT, "%s", name);
+	free(name);
 }
 
 static void
@@ -629,7 +651,7 @@ draw_tie(cairo_t *cr, double pos_scale, const elec_comp_t *tie)
 {
 	vect2_t endpt[2] = { NULL_VECT2, NULL_VECT2 };
 	vect2_t pos;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(tie != NULL);
@@ -683,7 +705,7 @@ draw_tie(cairo_t *cr, double pos_scale, const elec_comp_t *tie)
 	for (unsigned i = 0; i < tie->n_links; i++)
 		draw_node(cr, pos_scale, tie_node_pos(tie, i));
 
-	make_comp_name(tie->info->name, name);
+	name = make_comp_label(tie->info);
 	if (tie->n_links == 3) {
 		show_text_aligned(cr, PX(pos.x), PX(pos.y + 1.8),
 		    TEXT_ALIGN_CENTER, "%s", name);
@@ -691,6 +713,7 @@ draw_tie(cairo_t *cr, double pos_scale, const elec_comp_t *tie)
 		show_text_aligned(cr, PX(pos.x), PX(pos.y + 1.5),
 		    TEXT_ALIGN_CENTER, "%s", name);
 	}
+	free(name);
 }
 
 static void
@@ -698,7 +721,7 @@ draw_diode(cairo_t *cr, double pos_scale, const elec_comp_t *diode,
     bool draw_line)
 {
 	vect2_t pos;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(diode != NULL);
@@ -721,9 +744,10 @@ draw_diode(cairo_t *cr, double pos_scale, const elec_comp_t *diode,
 	cairo_stroke(cr);
 	cairo_restore(cr);
 
-	make_comp_name(diode->info->name, name);
+	name = make_comp_label(diode->info);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y + 1.5),
 	    TEXT_ALIGN_CENTER, "%s", name);
+	free(name);
 }
 
 static void
@@ -731,7 +755,7 @@ draw_load(cairo_t *cr, double pos_scale, double font_sz,
     const elec_comp_info_t *info)
 {
 	vect2_t pos;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(info != NULL);
@@ -761,9 +785,10 @@ draw_load(cairo_t *cr, double pos_scale, double font_sz,
 		break;
 	}
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y + 1.7),
 	    TEXT_ALIGN_CENTER, "%s", name);
+	free(name);
 }
 
 static void
@@ -772,7 +797,7 @@ draw_batt(cairo_t *cr, double pos_scale, const elec_comp_info_t *info,
 {
 	vect2_t pos;
 	vect3_t color;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(cr != NULL);
 	ASSERT(info != NULL);
@@ -817,9 +842,10 @@ draw_batt(cairo_t *cr, double pos_scale, const elec_comp_info_t *info,
 
 	cairo_stroke(cr);
 
-	make_comp_name(info->name, name);
+	name = make_comp_label(info);
 	show_text_aligned(cr, PX(pos.x - 1.4), PX(pos.y),
 	    TEXT_ALIGN_RIGHT, "%s", name);
+	free(name);
 }
 
 static void
@@ -1028,7 +1054,7 @@ draw_comp_info(const elec_comp_t *comp, cairo_t *cr, double pos_scale,
 	n_srcs = count_srcs(srcs);
 
 	if (comp->info->type != ELEC_GEN) {
-		char name[MAX_NAME_LEN];
+		char *name = NULL;
 		const char *powered_by;
 
 		switch (n_srcs) {
@@ -1036,7 +1062,7 @@ draw_comp_info(const elec_comp_t *comp, cairo_t *cr, double pos_scale,
 			powered_by = "nothing";
 			break;
 		case 1:
-			make_comp_name(srcs[0]->info->name, name);
+			name = make_comp_label(srcs[0]->info);
 			powered_by = name;
 			break;
 		default:
@@ -1045,6 +1071,7 @@ draw_comp_info(const elec_comp_t *comp, cairo_t *cr, double pos_scale,
 		}
 		show_text_aligned(cr, PX(pos.x), PX(pos.y),
 		    TEXT_ALIGN_LEFT, "Powered by: %s", powered_by);
+		free(name);
 		pos.y += LINE_HEIGHT;
 	}
 
@@ -1409,7 +1436,7 @@ draw_bus_info(const elec_comp_t *bus, cairo_t *cr, double pos_scale,
 	unsigned comp_i = 0, num_loads = 0;
 	double y, height, U;
 	cairo_path_t *path;
-	char name[MAX_NAME_LEN];
+	char *name;
 
 	ASSERT(bus != NULL);
 	ASSERT(bus->info != NULL);
@@ -1424,9 +1451,10 @@ draw_bus_info(const elec_comp_t *bus, cairo_t *cr, double pos_scale,
 	height = LINE_H * (1 + ceil(num_loads / 2.0));
 	draw_comp_bg(cr, pos_scale, pos, VECT2(30, height));
 
-	make_comp_name(bus->info->name, name);
+	name = make_comp_label(bus->info);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y - height / 2 + 0.3 * LINE_H),
 	    TEXT_ALIGN_CENTER, "%s", name);
+	free(name);
 	U = libelec_comp_get_in_volts(bus);
 	show_text_aligned(cr, PX(pos.x), PX(pos.y - height / 2 + 0.7 * LINE_H),
 	    TEXT_ALIGN_CENTER, "U: %.*fV", fixed_decimals(U, 4), U);
@@ -1473,7 +1501,7 @@ draw_bus_info(const elec_comp_t *bus, cairo_t *cr, double pos_scale,
 		}
 		draw_cb_icon(cr, pos_scale, font_sz, comp_pos,
 		    info->cb.fuse, comp->scb.cur_set,
-		    info->cb.triphase, info->name,
+		    info->cb.triphase,
 		    (vect3_t){COMP_INFO_BG_RGB}, comp);
 		I = libelec_comp_get_in_amps(comp);
 		W = libelec_comp_get_in_pwr(comp);

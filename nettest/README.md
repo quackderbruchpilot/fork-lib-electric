@@ -32,6 +32,26 @@ and enables support for it if present. You simply need to make sure you
 have the GNU readline library as well as development headers for it
 installed.
 
+### GUI label regression tests
+
+The default CMake build also builds `gui_label_test`. Run it with:
+
+```text
+ctest --test-dir build --output-on-failure
+```
+
+It exercises the real parser, BMK lookup and duplicate rejection,
+optional/repeated display labels, Cairo diagram/detail text, long labels,
+legacy formatting and malformed-label cleanup. Set `BUILD_TESTING=OFF`
+to omit this test target.
+
+The bundled v0.37 headers predate the `REQ_PTR` annotation already used
+by libelec. When testing with that bundle, supply a local compatibility
+header defining `REQ_PTR(name)` as `*name` via the compiler's forced-include
+option, or use matching newer libacfutils headers. With MinGW 15 and the
+bundled older static libraries, `-Wl,--undefined=pthread_create` selects
+the bundled pthread implementation before the toolchain fallback.
+
 ## Running
 
 To run the utility, pass a path to the electrical network definition file

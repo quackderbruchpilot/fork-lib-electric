@@ -435,6 +435,8 @@ struct elec_comp_info_s {
 		bool			virt;
 		bool			invis;
 		vect3_t			color;
+		/** Optional display-only description; NULL if omitted. */
+		char			*label;
 	} gui;
 	/**
 	 * Physical location information. This allows locating the component
