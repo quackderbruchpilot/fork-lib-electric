@@ -685,7 +685,7 @@ diode name. See "Bus" below.
 
 ### Optional component GUI labels
 
-Keep the component name equal to its unique equipment identifier (BMK).
+Keep the component name equal to its unique equipment identifier.
 Use `GUI_LABEL` inside the component block to add a human-readable description:
 
 ```text
@@ -707,7 +707,7 @@ The diagram displays `2PB1 (Battery 1)` and `3PP (DC BAT BUS)`. The
 component name remains `2PB1` or `3PP`. `ENDPT`, component lookups,
 serialization keys, datarefs and duplicate-name validation continue to
 use only that name. Labels need not be unique and cannot be used as aliases.
-Declaring the same BMK twice still fails, even if the labels differ.
+Declaring the same reference name twice still fails, even if the labels differ.
 
 `GUI_LABEL` takes the remaining words on the line, without surrounding
 quotes. Whitespace between words is normalized to a single space by the
