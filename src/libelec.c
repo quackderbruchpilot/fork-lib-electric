@@ -794,6 +794,7 @@ libelec_new(const char *filename)
 
 	sys->comp_infos = infos_parse(filename, &sys->num_infos);
 	if (sys->comp_infos == NULL) {
+		/* Parsing exits before libelec_destroy can release this member. */
 		free(sys->conf_filename);
 		ZERO_FREE(sys);
 		return (NULL);
