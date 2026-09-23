@@ -725,7 +725,7 @@ name presentation is unchanged. Labeled components show the exact BMK,
 followed by the label in parentheses. Text is not truncated; keep labels
 short or leave more space in the layout to avoid overlapping symbols.
 
-Adding this field changes the public component-info structure, so rebuild
+Adding this field changes the binary ABI of the public component-info structure, so rebuild
 the library and its consumers together.
 
 ### Bus
