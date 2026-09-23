@@ -208,6 +208,9 @@ target_link_libraries(nettest
 include(CTest)
 if(BUILD_TESTING)
 	add_executable(gui_label_test gui_label_test.c "${LIBELEC}/libelec.c")
+	configure_file(gui_label_test.net gui_label_test.net COPYONLY)
+	target_compile_definitions(gui_label_test PRIVATE
+	    GUI_LABEL_TEST_NETWORK="${CMAKE_CURRENT_BINARY_DIR}/gui_label_test.net")
 	target_link_libraries(gui_label_test
 	    ${LIBACFUTILS_LIB} ${MATH_LIB} ${PLATFORM_LIBS})
 	add_test(NAME gui_label COMMAND gui_label_test)
