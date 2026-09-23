@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <acfutils/crc64.h>
 #include <acfutils/log.h>
@@ -29,25 +30,36 @@ capture_text(cairo_t *cr, const char *text)
 #include "../src/libelec_drawing.c"
 #undef cairo_show_text
 
-static const char network[] =
-    "BATT 2PB1\n"
-    " VOLTS 24\n CAPACITY 3196800\n MAX_PWR 8800\n CHG_R 0.1\n"
-    " GUI_LABEL Battery 1\n GUI_POS -10 -5\n"
-    "LOAD 9PP1\n GUI_LABEL Battery 1\n GUI_POS 10 5\n"
-    "CB 4PB1 400\n GUI_LABEL Battery breaker\n GUI_POS 10 -5\n"
-    "BUS 3PP DC\n GUI_LABEL DC BAT BUS\n GUI_POS 0 0 4\n"
-    " ENDPT 2PB1\n ENDPT 9PP1\n ENDPT 4PB1\n"
-    "LOAD 9PP2\n"
-    "BUS 4PP DC\n ENDPT 4PB1\n ENDPT 9PP2\n GUI_POS 20 0 4\n";
+static char *
+read_file(const char *filename)
+{
+	FILE *fp;
+	char *text;
+	long len;
+
+	fp = fopen(filename, "rb");
+	VERIFY(fp != NULL);
+	VERIFY(fseek(fp, 0, SEEK_END) == 0);
+	len = ftell(fp);
+	VERIFY(len >= 0);
+	VERIFY(fseek(fp, 0, SEEK_SET) == 0);
+	text = malloc((size_t)len + 1);
+	VERIFY(text != NULL);
+	VERIFY(fread(text, 1, (size_t)len, fp) == (size_t)len);
+	text[len] = '\0';
+	VERIFY(fclose(fp) == 0);
+
+	return (text);
+}
 
 static elec_sys_t *
 load_text(const char *text)
 {
-	FILE *fp = fopen("gui_label_test.net", "wb");
+	FILE *fp = fopen("gui_label_test_generated.net", "wb");
 	VERIFY(fp != NULL);
 	VERIFY(fwrite(text, 1, strlen(text), fp) == strlen(text));
 	VERIFY(fclose(fp) == 0);
-	return (libelec_new("gui_label_test.net"));
+	return (libelec_new("gui_label_test_generated.net"));
 }
 
 static void
@@ -65,12 +77,13 @@ main(void)
 	cairo_surface_t *surface;
 	cairo_t *cr;
 	elec_comp_info_t legacy = { 0 };
-	char *label, *bad;
+	char *label, *bad, *network;
 	char long_label[1024];
 
 	log_init(test_log, "gui_label_test");
 	crc64_init();
-	sys = load_text(network);
+	network = read_file(GUI_LABEL_TEST_NETWORK);
+	sys = libelec_new(GUI_LABEL_TEST_NETWORK);
 	VERIFY(sys != NULL);
 	batt = libelec_comp_find(sys, "2PB1");
 	bus = libelec_comp_find(sys, "3PP");
@@ -150,7 +163,8 @@ main(void)
 	bad = sprintf_alloc("%s UNKNOWN invalid\n", network);
 	expect_bad(bad);
 	free(bad);
-	VERIFY(remove("gui_label_test.net") == 0);
+	free(network);
+	VERIFY(remove("gui_label_test_generated.net") == 0);
 	log_fini();
 	puts("GUI_LABEL parser, identity, rendering and compatibility tests passed");
 	return (0);
